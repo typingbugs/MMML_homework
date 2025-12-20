@@ -1,0 +1,10 @@
+openai:
+  base_url: "https://ai.jingfanke.site/v1"
+embedding_model:
+  text: "baai/bge-m3"
+  multimodal: "doubao/doubao-embedding-vision"
+vector_db:
+  persist_dir: "data/vector_db"
+file_dir:
+  paper: "data/papers"
+  image: "data/images"
