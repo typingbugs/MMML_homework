@@ -2,8 +2,10 @@ from utils.pdf_loader import load_pdf_text, load_papers_from_dir
 from pathlib import Path
 from shutil import copyfile
 import hashlib
-from infrastructure.embeddings.openai_text import OpenAITextEmbedding
+from typing import List
+from infrastructure.embeddings import OpenAITextEmbedding
 from infrastructure.vector_db.chroma import ChromaDB
+
 
 class PaperService:
     def __init__(self, embedder, vector_db, save_dir):
@@ -30,7 +32,7 @@ class PaperService:
     def embed_paper_from_file(self, pdf_path: str, topics=None):
         text = load_pdf_text(Path(pdf_path))
         chunks = [text[i:i+500] for i in range(0, len(text), 500)]
-        embeddings = self.embedder.embed_text(chunks, topics=topics)
+        embeddings = self.make_request(chunks, topics=topics)
         save_paths = self.save_paper(pdf_path, topics=topics)
         metadatas = [{"path": save_paths}] * len(chunks)
         return chunks, embeddings, metadatas
@@ -51,8 +53,12 @@ class PaperService:
         return all_chunks, all_embeddings, all_metadatas
 
     def search(self, query, top_k=5):
-        q_emb = self.embedder.embed([query])[0]
+        q_emb = self.make_request([query])[0]
         results = self.vector_db.search(q_emb, top_k=top_k)
+
+        if len(results["documents"][0]) == 0:
+            print("🔍 未找到相关论文。")
+            return
 
         for i, doc in enumerate(results["documents"][0]):
             meta = results["metadatas"][0][i]
@@ -60,7 +66,7 @@ class PaperService:
             print("来源文件:", meta["path"][0])
             print(doc[:300], "...")
 
-    def save_paper(self, pdf_path: str, topics=None):
+    def save_paper(self, pdf_path: str, topics: str = None):
         topics = topics.split(",") if topics else ["untagged"]
         pdf_path = Path(pdf_path)
         save_file_name = hashlib.md5(str(pdf_path).encode()).hexdigest() + pdf_path.suffix
@@ -72,3 +78,17 @@ class PaperService:
             copyfile(pdf_path, save_path)
             save_paths.append(save_path)
         return save_paths
+    
+    def make_request(self, texts: List[str], topics=None):
+        if topics:
+            topics = f"Topics: {topics}" if topics else ""
+            texts = [f"Passage: {text}" for text in texts]
+            input_texts = [topics + "\n" + text for text in texts]
+        else:
+            input_texts = texts
+
+        emb = [
+            self.embedder.embed_text(input_text)
+            for input_text in input_texts
+        ]
+        return emb

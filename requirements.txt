@@ -3,3 +3,4 @@ chromadb
 PyPDF2
 pyyaml
 tqdm
+volcengine-python-sdk[ark]

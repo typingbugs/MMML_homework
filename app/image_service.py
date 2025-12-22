@@ -2,13 +2,15 @@ from utils.image_loader import load_images_from_dir
 from pathlib import Path
 from shutil import copyfile
 import hashlib
-from infrastructure.embeddings.openai_multimodal import OpenAIMultimodalEmbedding
+import base64
+from infrastructure.embeddings import ArkImageEmbedding, ArkTextEmbedding
 from infrastructure.vector_db.chroma import ChromaDB
 
 
 class ImageService:
-    def __init__(self, embedder, vector_db, save_dir):
-        self.embedder: OpenAIMultimodalEmbedding = embedder
+    def __init__(self, image_embedder, text_embedder, vector_db, save_dir):
+        self.image_embedder: ArkImageEmbedding = image_embedder
+        self.text_embedder: ArkTextEmbedding = text_embedder
         self.vector_db: ChromaDB = vector_db
         self.save_dir = Path(save_dir)
 
@@ -29,7 +31,7 @@ class ImageService:
         print(f"✅ 已索引图片: {image_path}")
 
     def embed_image_from_file(self, image_path: str, topics=None):
-        emb = self.embedder.embed_image(image_path, topics=topics)
+        emb = self.make_image_request(image_path, topics=topics)
         save_paths = self.save_image(image_path, topics=topics)
         return image_path, emb, {"path": save_paths}
 
@@ -49,9 +51,16 @@ class ImageService:
         return documents, embeddings, metadatas
 
     def search(self, query, top_k=5):
-        q_emb = self.embedder.embed_text([query])[0]
+        if Path(query).is_file():
+            q_emb = self.make_image_request(query)
+        else:
+            q_emb = self.make_text_request(query)
 
         results = self.vector_db.search(q_emb, top_k=top_k)
+
+        if len(results["metadatas"][0]) == 0:
+            print("🔍 未找到相关图片。")
+            return
 
         print("🔍 搜索结果：")
         for i, meta in enumerate(results["metadatas"][0]):
@@ -70,3 +79,18 @@ class ImageService:
             save_paths.append(save_path)
         return save_paths
         
+    def make_image_request(self, image_path: str, topics=None):
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+        emb = self.image_embedder.embed_image(
+            image_base64, 
+            image_type=Path(image_path).suffix.lstrip("."),
+            text=f"Topics: {topics}\n" if topics else None
+        )
+        return emb
+    
+    def make_text_request(self, text: str):
+        emb = self.text_embedder.embed_text(text)
+        return emb

@@ -1,10 +1,23 @@
-openai:
-  base_url: "https://ai.jingfanke.site/v1"
-embedding_model:
-  text: "baai/bge-m3"
-  multimodal: "doubao/doubao-embedding-vision"
+model:
+  paper:
+    text: 
+      service: "openai"
+      name: "baai/bge-m3"
+      base_url: "https://ai.jingfanke.site/v1"
+  image:
+    text: 
+      service: "ark"
+      name: "doubao-embedding-vision-250615"
+      base_url: null
+    image: 
+      service: "ark"
+      name: "doubao-embedding-vision-250615"
+      base_url: null
+
 vector_db:
-  persist_dir: "data/vector_db"
+  name: "chroma"
+  persist_dir: "data/vector_db/chroma"
+
 file_dir:
   paper: "data/papers"
   image: "data/images"
