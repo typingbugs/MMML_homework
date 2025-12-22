@@ -21,7 +21,8 @@ class ArkTextEmbedding(TextEmbeddingModel):
         ]
         resp = self.client.multimodal_embeddings.create(
             model=self.model,
-            input=input_content
+            input=input_content,
+            encoding_format='float'
         )
 
         return resp.data.embedding

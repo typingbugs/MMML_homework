@@ -1,5 +1,4 @@
 import argparse
-import os
 from dotenv import load_dotenv
 from utils.config_loader import load_config
 from infrastructure.embeddings import (
@@ -24,7 +23,7 @@ def paper_main(cfg, args):
     if args.cmd == "add_paper":
         service.add_paper(args.path, args.topics)
     elif args.cmd == "search_paper":
-        service.search(args.query, top_k=args.top_k)
+        service.search_paper(args.query, top_k=args.top_k)
 
 
 def image_main(cfg, args):
@@ -50,7 +49,7 @@ def image_main(cfg, args):
     if args.cmd == "add_image":
         service.add_image(args.path, args.topics)
     elif args.cmd == "search_image":
-        service.search(args.query, top_k=args.top_k)
+        service.search_image(args.query, top_k=args.top_k)
 
 
 def get_args():

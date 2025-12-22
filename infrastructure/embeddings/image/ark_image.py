@@ -18,16 +18,17 @@ class ArkImageEmbedding(ImageEmbeddingModel):
         if text:
             input_content.append({
                 "type": "text",
-                "text": text
+                "text": text + "\n"
             })
         input_content.append({
             "type": "image_url",
-            "image_url": f"data:image/{image_type};base64,'{image_base64}'"
+            "image_url": {"url": f"data:image/{image_type};base64,{image_base64}"}
         })
 
         resp = self.client.multimodal_embeddings.create(
             model=self.model,
-            input=input_content
+            input=input_content,
+            encoding_format='float'
         )
 
-        return resp["data"]["embedding"]
+        return resp.data.embedding
