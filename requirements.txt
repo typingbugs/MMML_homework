@@ -4,3 +4,4 @@ PyPDF2
 pyyaml
 tqdm
 volcengine-python-sdk[ark]
+python-dotenv
